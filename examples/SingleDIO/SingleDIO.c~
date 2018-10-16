@@ -77,7 +77,9 @@ int InitSingleDIO(tSingleDioData *pDioData)
       fprintf(f,"SingleDIO: _PdGetAdapterInfo error %d\n", retVal);
       system ("dialog --title 'ERROR: DIO Test' --msgbox 'No adapter detected error!\n\nPress enter to continue.' 10 25");
       system("clear");
-      exit(EXIT_FAILURE);
+      //exit(EXIT_FAILURE);
+
+      return 1;
    }
 
    if(adaptInfo.atType & atPD2DIO) {
@@ -88,7 +90,8 @@ int InitSingleDIO(tSingleDioData *pDioData)
       fprintf(f,"This board is not a PD2-DIO\n");
       system ("dialog --title 'ERROR: DIO Test' --msgbox 'This is not a PD2-DIO adapter error!\n\nPress enter to continue.' 10 25");
       system("clear");
-      exit(EXIT_FAILURE);
+      //exit(EXIT_FAILURE);
+      return 1;
    }
 
    pDioData->handle = PdAcquireSubsystem(pDioData->board, DigitalIn, 1);
@@ -183,7 +186,7 @@ int SingleDIO(tSingleDioData *pDioData)
          {
             count=0;
          }
-         usleep(1000);     //Microseconds between each IO stream set
+         usleep(3000);     //Microseconds between each IO stream set
          retVal = _PdDIORead(pDioData->handle, j, &readVal);
          if(retVal < 0)
          {
@@ -207,7 +210,7 @@ int SingleDIO(tSingleDioData *pDioData)
 
       count++;
 
-      usleep(1.0E3/pDioData->scanRate);
+      usleep(3.0E3/pDioData->scanRate);
    }
 
     if (failFlag == 0) 
@@ -263,21 +266,22 @@ void CleanUpSingleDIO(tSingleDioData *pDioData)
 
 int main(int argc, char *argv[])
 {
-   int i,k;
-   FILE* fp;                        //Temp file for device number entry
-   char* readFile = NULL, end;
-   size_t len;
-   long deviceNumber;
+   int i,k,j=0;
+//   FILE* fp;                        //Temp file for device number entry
+//   char* readFile = NULL, end;
+//   size_t len;
+//   long deviceNumber;
 
 //Default parameters
-//   PD_PARAMS params = {0, 4, {0,1,2,3}, 5.0, 0};
+   PD_PARAMS params = {0, 4, {0,1,2,3}, 5.0, 0};
   
 
-//   int statusStart = system ("dialog --title 'PD2-DIO-128I/MT Test' --yesno 'Enter DIO test?' 10 25");
+   int statusStart = system ("dialog --title 'PD2-DIO-128I/MT Test' --yesno 'Enter DIO test?' 10 25");
 
-   int statusStart = system ("dialog --title 'PD2-DIO-128I/MT Test' --nocancel --inputbox 'To begin, please enter the board number of your PD2-DIO device (0-4): ' 10 25 2> deviceInput.txt");
 
-   fp = fopen("deviceInput.txt", "r");              //Temp file for device number entry
+   //int statusStart = system ("dialog --title 'PD2-DIO-128I/MT Test' --nocancel --inputbox 'To begin, please enter the board number of your PD2-DIO device (0-4): ' 10 25 2> deviceInput.txt");
+
+/*   fp = fopen("deviceInput.txt", "r");              //Temp file for device number entry
 
    getline(&readFile, &len, fp);  //Read user input from temp file
 
@@ -287,8 +291,9 @@ int main(int argc, char *argv[])
 
    deviceNumber = strtol(readFile, &end, 10);    //Convert device number entry to long
 
-   PD_PARAMS params = {deviceNumber, 4, {0,1,2,3}, 5.0, 0};
 
+   PD_PARAMS params = {deviceNumber, 4, {0,1,2,3}, 5.0, 0};
+*/
    ParseParameters(argc, argv, &params);
 
 if(!statusStart) {            //if valid entry to start test
@@ -313,7 +318,17 @@ if(!statusStart) {            //if valid entry to start test
 
    f = fopen("/home/mtsnlinux/Desktop/DIO_test_logs/Log_DIO_Test.txt","w");
 
-   InitSingleDIO(&G_DioData);
+   //InitSingleDIO(&G_DioData);
+
+   while(j<4 && InitSingleDIO(&G_DioData)) {
+
+      j++;
+
+      PD_PARAMS params = {j, 4, {0,1,2,3}, 5.0, 0};
+
+      ParseParameters(argc, argv, &params);      
+
+   }
 
 for(k=0;k<2;k++) {
 
