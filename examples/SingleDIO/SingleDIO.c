@@ -213,11 +213,6 @@ int SingleDIO(tSingleDioData *pDioData)
       usleep(1.0E6/pDioData->scanRate);
    }
 
-    if (failFlag == 0) 
-    {
-       fprintf(f,"\nPASSED ALL TESTS\n");
-    }
-
    /*Turn all LEDs off after test*/
 
    system ("dialog --title 'PD2-DIO-128I/MT Test' --infobox 'Running DIO test\n\nPlease wait for LEDs to turn off...' 10 25");
@@ -227,7 +222,12 @@ int SingleDIO(tSingleDioData *pDioData)
       retVal = _PdDIOWrite(pDioData->handle, j, 0);
    }
 
-   return retVal;
+    if (failFlag == 0) 
+    {
+       fprintf(f,"\nPASSED ALL TESTS\n");
+    }
+
+   return failFlag;
 }
 
 
@@ -266,7 +266,7 @@ void CleanUpSingleDIO(tSingleDioData *pDioData)
 
 int main(int argc, char *argv[])
 {
-   int i,k,j=0;
+   int i,k,j=-1, failFlag[3], initFlag=1;
 //   FILE* fp;                        //Temp file for device number entry
 //   char* readFile = NULL, end;
 //   size_t len;
@@ -320,35 +320,52 @@ if(!statusStart) {            //if valid entry to start test
 
    //InitSingleDIO(&G_DioData);
 
-   while(j<4 && InitSingleDIO(&G_DioData)) {
+while(j<4 && initFlag) {      //Limit how many values of j (device number) we test. InitSingleDIO returns 1 on fail. While both conditions are true, try the next device number for success.
 
-      j++;
+   j++;   //Next device number
 
-      PD_PARAMS params = {j, 4, {0,1,2,3}, 5.0, 0};
+   PD_PARAMS params = {j, 4, {0,1,2,3}, 5.0, 0};  //Format device parameters
 
-      ParseParameters(argc, argv, &params);      
+   ParseParameters(argc, argv, &params);      //Parse parameters to prepare for next InitSingleDIO
+
+   initFlag = InitSingleDIO(&G_DioData);
+
+}
+
+if(!initFlag) {   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+   for(k=0;k<2;k++) {
+
+      // run the acquisition
+      failFlag[k] = SingleDIO(&G_DioData);
+
+      // Cleanup acquisition
+      CleanUpSingleDIO(&G_DioData);
+
+      usleep(1000000); //!!!!!!!!!!!!!!!!!!!!
 
    }
-
-for(k=0;k<2;k++) {
-
-   // run the acquisition
-   SingleDIO(&G_DioData);
-
-   // Cleanup acquisition
-   CleanUpSingleDIO(&G_DioData);
-
-   usleep(1000000); //!!!!!!!!!!!!!!!!!!!!
-
 }
 
    fclose(f);
 
    system ("dialog --title 'DIO Test' --msgbox 'Test complete.\n\nLog generated: Log_DIO_Test.txt' 10 25");
 
+   if(!failFlag[0] && !failFlag[1]) {
+
+      system ("dialog --title 'DIO Test success!' --msgbox '\n\nPASS\n\nPress enter to quit.' 10 25");
+
+   }
+
+   else {
+
+            system ("dialog --title 'DIO Test fail!' --msgbox '\n\nFAIL\n\nPlease contact BluePoint Controls for service.\n\nPress enter to quit.' 10 25");
+
+   }
+
 }
  
-   else if(statusStart!=0) {
+   else if(statusStart!=0 | initFlag) {
        system ("dialog --title 'DIO Test' --msgbox 'Test not run.\n\nNo log generated.\n\nPress enter to quit.' 10 25");
 }
    system("clear");
