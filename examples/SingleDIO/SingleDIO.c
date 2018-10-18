@@ -186,7 +186,7 @@ int SingleDIO(tSingleDioData *pDioData)
          {
             count=0;
          }
-         usleep(1000000);     //Microseconds between each IO stream set
+         usleep(1000);     //Microseconds between each IO stream set
          retVal = _PdDIORead(pDioData->handle, j, &readVal);
          if(retVal < 0)
          {
@@ -210,7 +210,7 @@ int SingleDIO(tSingleDioData *pDioData)
 
       count++;
 
-      usleep(1.0E6/pDioData->scanRate);
+      usleep(1.0E3/pDioData->scanRate);
    }
 
    /*Turn all LEDs off after test*/
@@ -255,7 +255,7 @@ void CleanUpSingleDIO(tSingleDioData *pDioData)
    {
       retVal = PdAcquireSubsystem(pDioData->handle, DigitalIn, 0);
       if (retVal < 0)
-         fprintf(f,"SingleDI: PdReleaseSubsystem error %d\n", retVal);
+         fprintf(f,"SingleDIO: PdReleaseSubsystem error %d\n", retVal);
          system ("dialog --title 'ERROR: DIO Test' --msgbox 'Can't close adapter error!\n\nPress enter to continue.' 10 25");
          system("clear");
    }
